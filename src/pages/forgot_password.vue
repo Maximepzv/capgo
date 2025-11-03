@@ -5,7 +5,6 @@ import { ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import VueTurnstile from 'vue-turnstile'
 import iconEmail from '~icons/oui/email?raw'
 import iconPassword from '~icons/ph/key?raw'
 import { useSupabase } from '~/services/supabase'
@@ -17,10 +16,7 @@ const route = useRoute('/forgot_password')
 const supabase = useSupabase()
 const dialogStore = useDialogV2Store()
 const step = ref(1)
-const turnstileToken = ref('')
 const mfaCode = ref('')
-
-const captchaKey = ref(import.meta.env.VITE_CAPTCHA_KEY)
 
 const isLoading = ref(false)
 const isLoadingMain = ref(true)
@@ -28,11 +24,8 @@ const isLoadingMain = ref(true)
 async function step1(form: { email: string }) {
   const redirectTo = `${import.meta.env.VITE_APP_URL}/forgot_password?step=2`
   // console.log('redirect', redirectTo)
-  const { error } = await supabase.auth.resetPasswordForEmail(form.email, { redirectTo, captchaToken: turnstileToken.value })
+  const { error } = await supabase.auth.resetPasswordForEmail(form.email, { redirectTo })
   if (error) {
-    if (error.message.includes('captcha')) {
-      toast.error(t('captcha-fail'))
-    }
     setErrors('forgot-password', [error.message], {})
     console.error('error reset', error)
   }
@@ -172,9 +165,6 @@ watchEffect(() => {
                       autocomplete="email"
                       validation="required:trim"
                     />
-                    <template v-if="!!captchaKey">
-                      <VueTurnstile v-model="turnstileToken" size="flexible" :site-key="captchaKey" />
-                    </template>
                     <FormKitMessages />
                   </div>
 

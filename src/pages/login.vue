@@ -9,7 +9,6 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import VueTurnstile from 'vue-turnstile'
 import iconEmail from '~icons/oui/email?raw'
 import iconPassword from '~icons/ph/key?raw'
 import mfaIcon from '~icons/simple-icons/2fas?raw'
@@ -21,14 +20,11 @@ const route = useRoute('/login')
 const supabase = useSupabase()
 const isLoading = ref(false)
 const isMobile = ref(Capacitor.isNativePlatform())
-const turnstileToken = ref('')
-const captchaKey = ref(import.meta.env.VITE_CAPTCHA_KEY)
 const statusAuth: Ref<'login' | '2fa'> = ref('login')
 const mfaLoginFactor: Ref<Factor | null> = ref(null)
 const mfaChallangeId: Ref<string> = ref('')
 const router = useRouter()
 const { t } = useI18n()
-const captchaComponent = ref<InstanceType<typeof VueTurnstile> | null>(null)
 
 const version = import.meta.env.VITE_APP_VERSION
 
@@ -124,19 +120,13 @@ async function login(form: { email: string, password: string }) {
   const { error } = await supabase.auth.signInWithPassword({
     email: form.email,
     password: form.password,
-    options: {
-      captchaToken: turnstileToken.value,
-    },
   })
   if (error) {
     isLoading.value = false
     console.error('error', error)
     setErrors('login-account', [error.message], {})
     if (error.message.includes('Invalid login credentials')) {
-      captchaComponent.value?.reset()
-    }
-    if (error.message.includes('captcha')) {
-      toast.error(t('captcha-fail'))
+      // captchaComponent.value?.reset()
     }
     else {
       toast.error(t('invalid-auth'))
@@ -350,9 +340,6 @@ onMounted(checkLogin)
                     validation="required:trim" enterkeyhint="send" autocomplete="current-password"
                     data-test="password"
                   />
-                </div>
-                <div v-if="!!captchaKey">
-                  <VueTurnstile ref="captchaComponent" v-model="turnstileToken" size="flexible" :site-key="captchaKey" />
                 </div>
                 <FormKitMessages data-test="form-error" />
                 <div>
